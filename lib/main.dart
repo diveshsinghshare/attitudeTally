@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
           } else {
             return snapshot.data == null
                 ? LoginScreen()
-                : CourseListScreen();
+                : LoginScreen();
           }
         },
       ),

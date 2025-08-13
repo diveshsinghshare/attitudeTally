@@ -17,25 +17,20 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool isLoading = false;
   bool isPasswordVisible = false;
-  String selectedRole = 'Applicant'; // Default role
+  String selectedRole = 'Applicant';
 
   Future<void> login() async {
-    setState(() {
-      isLoading = true;
-    });
+    setState(() => isLoading = true);
 
     final url = Uri.parse("https://www.attitudetallyacademy.com/mobile/app/login.php");
 
-    // final payload = {
-    //   "username": _usernameController.text.trim(),
-    //   "password": _passwordController.text.trim()
-    // };
-
-
-
     final payload = {
-      "username": "6399783295",
-      "password": "6399783295"
+      "username": _usernameController.text.trim().isEmpty
+          ? "6399783295"
+          : _usernameController.text.trim(),
+      "password": _passwordController.text.trim().isEmpty
+          ? "6399783295"
+          : _passwordController.text.trim(),
     };
 
     try {
@@ -48,113 +43,105 @@ class _LoginScreenState extends State<LoginScreen> {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data["status"] == 1) {
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   SnackBar(content: Text(data["message"])),
-        // );
-        // Save token to SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString("token", data["token"]);
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const CourseListScreen()),
         );
-        // Store token or navigate
-        print("Token: ${data["token"]}");
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data["message"] ?? "Login failed")),
-        );
+        _showSnack(data["message"] ?? "Login failed");
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      _showSnack("Error: $e");
     }
 
-    setState(() {
-      isLoading = false;
-    });
+    setState(() => isLoading = false);
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.cyan[700],
-      body: Center(
-        child: SingleChildScrollView(
-          child: Container(
-            margin: const EdgeInsets.all(16),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF00ACC8), Color(0xFF003366)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Logo
-                Image.asset("assets/logo.png", height: 60),
-                const SizedBox(height: 8),
-                const Text(
-                  "PLEASE ENTER CREDENTIALS FOR LOGIN",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: Colors.white,
-                      backgroundColor: Color(0xFF003366),
-                      fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-
-                // Role selection
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ChoiceChip(
-                      label: const Text("APPLICANT"),
-                      selected: selectedRole == 'Applicant',
-                      onSelected: (selected) {
-                        setState(() {
-                          selectedRole = 'Applicant';
-                        });
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      label: const Text("EMPLOYER"),
-                      selected: selectedRole == 'Employer',
-                      onSelected: (selected) {
-                        setState(() {
-                          selectedRole = 'Employer';
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Username field
-                TextField(
-                  controller: _usernameController,
-                  decoration: const InputDecoration(
-                    hintText: "Username",
-                    border: OutlineInputBorder(),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
                   ),
-                ),
-                const SizedBox(height: 12),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset("assets/logo.png", height: 80),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Welcome Back",
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF003366),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Login to continue",
+                    style: TextStyle(color: Colors.grey.shade700),
+                  ),
+                  const SizedBox(height: 24),
 
-                // Password field
-                TextField(
-                  controller: _passwordController,
-                  obscureText: !isPasswordVisible,
-                  decoration: InputDecoration(
-                    hintText: "Password",
-                    border: const OutlineInputBorder(),
-                    suffixIcon: IconButton(
+                  // Role selection
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _roleChip("Applicant"),
+                      const SizedBox(width: 12),
+                      _roleChip("Employer"),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Username field
+                  _inputField(
+                    controller: _usernameController,
+                    hint: "Username",
+                    icon: Icons.person,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Password field
+                  _inputField(
+                    controller: _passwordController,
+                    hint: "Password",
+                    icon: Icons.lock,
+                    obscureText: !isPasswordVisible,
+                    suffix: IconButton(
                       icon: Icon(
-                          isPasswordVisible
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                          color: Colors.grey),
+                        isPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                        color: Colors.grey,
+                      ),
                       onPressed: () {
                         setState(() {
                           isPasswordVisible = !isPasswordVisible;
@@ -162,38 +149,105 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 24),
 
-                // Login button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF003366)),
-                    onPressed: isLoading ? null : login,
-                    child: isLoading
-                        ? const CircularProgressIndicator(
-                      color: Colors.white,
-                    )
-                        : const Text("LOGIN"),
+                  // Login button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30)),
+                      ),
+                      onPressed: isLoading ? null : login,
+                      child: Ink(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF00ACC8), Color(0xFF003366)],
+                          ),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Container(
+                          alignment: Alignment.center,
+                          child: isLoading
+                              ? const CircularProgressIndicator(
+                            color: Colors.white,
+                          )
+                              : const Text(
+                            "LOGIN",
+                            style: TextStyle(
+                                fontSize: 16, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
+                  const SizedBox(height: 12),
 
-                // Forgot password
-                GestureDetector(
-                  onTap: () {
-                    // Navigate to forgot password
-                  },
-                  child: const Text(
-                    "Forgot Password?",
-                    style: TextStyle(color: Colors.blue),
-                  ),
-                )
-              ],
+                  // Forgot password
+                  GestureDetector(
+                    onTap: () {
+                      // forgot password action
+                    },
+                    child: const Text(
+                      "Forgot Password?",
+                      style: TextStyle(
+                        color: Color(0xFF003366),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  )
+                ],
+              ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _roleChip(String role) {
+    final bool selected = selectedRole == role;
+    return ChoiceChip(
+      label: Text(role.toUpperCase()),
+      selected: selected,
+      selectedColor: const Color(0xFF00ACC8),
+      backgroundColor: Colors.grey.shade200,
+      labelStyle: TextStyle(
+        color: selected ? Colors.white : Colors.black87,
+        fontWeight: FontWeight.w600,
+      ),
+      onSelected: (value) {
+        setState(() {
+          selectedRole = role;
+        });
+      },
+    );
+  }
+
+  Widget _inputField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool obscureText = false,
+    Widget? suffix,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      decoration: InputDecoration(
+        prefixIcon: Icon(icon, color: Color(0xFF00ACC8)),
+        suffixIcon: suffix,
+        hintText: hint,
+        filled: true,
+        fillColor: Colors.grey.shade100,
+        contentPadding:
+        const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
         ),
       ),
     );
